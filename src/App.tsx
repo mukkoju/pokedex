@@ -20,7 +20,12 @@ interface IAppStates {
   slectedCategory?: string,
   categoeyNameInput?: string,
   slectedRadioType?: number,
-  showAddNewModal?: boolean
+  showAddNewModal?: boolean,
+  reorderText?: string,
+  showDeleteModal?: boolean,
+  currentCategory?: string,
+  currentItems?: number[],
+  isDeleting?: boolean
 }
 
 export default class App extends React.Component<IAppProps, IAppStates> {
@@ -32,7 +37,11 @@ export default class App extends React.Component<IAppProps, IAppStates> {
       pokemonsData: pokemonsData,
       categoriesData: categoriesData,
       slectedPOkemons: [],
-      showAddNewModal: false
+      showAddNewModal: false,
+      reorderText: "Reorder",
+      showDeleteModal: false,
+      currentItems: [],
+      isDeleting: false
     };
 
     this.onSelectPokemon = this.onSelectPokemon.bind(this);
@@ -40,23 +49,31 @@ export default class App extends React.Component<IAppProps, IAppStates> {
     this.handleDropDownChange = this.handleDropDownChange.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleSave = this.handleSave.bind(this);
+    this.reorder = this.reorder.bind(this);
+    this.delete = this.delete.bind(this);
+    this.onTabChange = this.onTabChange.bind(this)
 
   }
 
-  getList(data: any) {
+  getList(items: any, name: string) {
+
+    const isAll = (items == 'All')
     let pokemons = this.state.pokemonsData
-    if (data != 'all') {
+    if (!isAll) {
       let found: any =
         pokemons = _.filter(pokemons, function (p) {
-          return _.includes(data, p.id)
+          return _.includes(items, p.id)
         });
     }
+
+
 
 
     return (
       _.map(pokemons, (item, index) => {
         return (
           <li key={index}>
+
             <Checkbox
               value={item.id}
               onChange={this.onSelectPokemon.bind(this)}
@@ -192,6 +209,39 @@ export default class App extends React.Component<IAppProps, IAppStates> {
       });
   }
 
+  reorder(categoryName: string) {
+    const items = this.state.slectedPOkemons;
+    const data = { items: items, categoryName: categoryName };
+    this.setState({ reorderText: "Undo redorder" });
+    server.post('/reorderCatrgory', data)
+      .then((res) => {
+
+      })
+      .catch((error) => {
+
+      })
+  }
+
+
+  delete() {
+    const categoryName = this.state.currentCategory;
+    const data = { categoryName: categoryName }
+    this.setState({ isDeleting: true });
+    server.post('/deleteCategory', data)
+      .then((res) => {
+        this.setState({ isDeleting: false, showDeleteModal: false });
+      })
+      .catch((error) => {
+        this.setState({ isDeleting: false, showDeleteModal: false });
+      })
+  }
+
+  showDeleteModal() {
+    this.setState({
+      showDeleteModal: true
+    })
+  }
+
   showAddNewModal() {
     if (this.state.slectedPOkemons!.length == 0) {
       alert("Please select atleast one pokemon")
@@ -208,6 +258,18 @@ export default class App extends React.Component<IAppProps, IAppStates> {
       showAddNewModal: false
     })
   }
+
+  onTabChange(e: any, data: any) {
+    const activeIndex = data.activeIndex;
+    const items = data.panes[activeIndex].menuItem.items;
+    const name = data.panes[activeIndex].menuItem.name;
+    this.setState({
+      currentCategory: name,
+      currentItems: items
+    })
+  }
+
+
 
   componentDidMount() {
 
@@ -235,9 +297,18 @@ export default class App extends React.Component<IAppProps, IAppStates> {
   getTabPanes() {
     const categories = this.state.categoriesData.data.new;
     let panes: any = [];
-    panes.push({ menuItem: 'All', render: () => <Tab.Pane><ul>{this.getList('all')}</ul> </Tab.Pane> })
+    panes.push({ menuItem: 'All', render: () => <Tab.Pane><ul>{this.getList('All', 'all')}</ul> </Tab.Pane> })
     _.map(categories, (category) => {
-      panes.push({ menuItem: category, render: () => <Tab.Pane><ul>{this.getList(category.items)}</ul> </Tab.Pane> })
+      panes.push({
+        menuItem: category, render: () => <Tab.Pane>
+          <div>
+            <a href="#" className="p_cate_actions" onClick={this.reorder.bind(this, category.name)}>{this.state.reorderText}</a>
+            <a href="#" className="p_cate_actions" style={{ color: "red" }} onClick={this.showDeleteModal.bind(this)}>Delete category</a>
+            <Divider />
+          </div>
+          <ul>{this.getList(category.items, category.name)}</ul>
+        </Tab.Pane>
+      })
     })
 
     return panes;
@@ -265,7 +336,7 @@ export default class App extends React.Component<IAppProps, IAppStates> {
 
     const panes = this.getTabPanes();
     const categoryOptions = this.categoryOptions();
-
+    const currentItemsLength = this.state.currentItems!.length;
     return (
       <div className="App" >
         <Image src='https://cdn.bulbagarden.net/upload/thumb/4/4b/Pok%C3%A9dex_logo.png/250px-Pok%C3%A9dex_logo.png'
@@ -273,7 +344,7 @@ export default class App extends React.Component<IAppProps, IAppStates> {
           centered />
         <div className='ui grid centered' >
           <div className='ten wide column tabs' >
-            <Tab panes={panes} />
+            <Tab panes={panes} onTabChange={this.onTabChange} />
           </div>
         </div>
         <div className="p_add_btn">
@@ -323,6 +394,23 @@ export default class App extends React.Component<IAppProps, IAppStates> {
                   </Button>
           </Modal.Actions>
         </Modal>
+
+
+
+        <Modal size='tiny' open={this.state.showDeleteModal}>
+          <Modal.Header>Delete category</Modal.Header>
+          <Modal.Content>
+            <p>Are you sure you want to delete '{this.state.currentCategory}'</p>
+            <p>All {currentItemsLength} pokemon in this category will be deleted as well.</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button negative className='btn-negitive'
+              onClick={this.delete.bind(this)}
+              loading={this.state.isDeleting}>Delete</Button>
+          </Modal.Actions>
+        </Modal>
+
+
       </div>
     );
   }

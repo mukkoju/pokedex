@@ -30,6 +30,11 @@ ul li {
     transform: translateX(-50%);
 }
 
+.btn-negitive {
+  background-color: #db2828 !important;
+  color: white !important;
+  border-radius: 20px !important;
+}
 .btn {
   background-color: #1b1a80 !important;
   color: white !important;
@@ -57,7 +62,9 @@ ul li {
 .p_name_sec .p_tags {
   margin-top: 0.2em;
 }
-
+.p_cate_actions {
+  margin-left: 1em;
+}
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

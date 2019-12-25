@@ -1,31 +1,61 @@
 .App {
-  text-align: center;
+  background-color: #ffce31;
+  padding-top: 2em;
+  position: relative;
+  min-height: 800px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+ul li {
+  list-style-type: none;
+}
+.tabs {
+  background-color: white;
+  margin-top: 8em;
+}
+.p_name {
+  font-size: 1.4em;
+  display: inline;
+  font-weight: bold;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.p_img {
+  margin-left: 1em;
+  border: 1px solid lightgrey ;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.p_add_btn {
+  position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.App-link {
-  color: #61dafb;
+.btn {
+  background-color: #1b1a80 !important;
+  color: white !important;
+  border-radius: 20px !important;
+}
+.p_action_modal_sec .p_select_radio {
+  margin-bottom: 1em;
+  display: block !important;
+}
+
+.p_action_modal_sec .p_input {
+  width: 100%;
+}
+.p_sub_sec {
+  margin-left: 8em !important;
+}
+
+.p_sub_sec p{
+  margin: 0 !important;
+}
+.p_name_sec {
+  display: inline-block;
+  margin-left: 1em;
+}
+.p_name_sec .p_tags {
+  margin-top: 0.2em;
 }
 
 @keyframes App-logo-spin {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import './App.css';
-import { Tab, Image, Divider, Checkbox, Button, Modal, Radio, Dropdown, Input, Label } from 'semantic-ui-react'
+import { Tab, Image, Divider, Checkbox, Button, Modal, Radio, Dropdown, Input, Label, Form } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css';
 import pokemonsData from './pokemons';
 import categoriesData from './cates';
@@ -158,29 +158,56 @@ export default class App extends React.Component<IAppProps, IAppStates> {
   }
 
   handleSave() {
-    this.setState({ isSaving: true });
     const type = this.state.slectedRadioType;
     const items = this.state.slectedPOkemons;
+    const categoriesData = this.state.categoriesData
     if (type == 1) {
+      this.setState({ isSaving: true });
       const selectedCategory = this.state.slectedCategory;
       const data = { items: items, categoryName: selectedCategory }
       server.post('/addToCategory', data)
         .then((res) => {
-          this.setState({ isSaving: false, showAddNewModal: false });
+          let updatedcategoriesData = categoriesData
+          const index = _.findIndex(updatedcategoriesData.data.new, (c: any) => {
+            return c.name === selectedCategory
+          });
+          updatedcategoriesData.data.new[index].items = updatedcategoriesData.data.new[index].items.concat(items)
+          this.setState({ isSaving: false, showAddNewModal: false, categoriesData: updatedcategoriesData });
         })
         .catch((error) => {
-          this.setState({ isSaving: false, showAddNewModal: false });
+          //remove this block after api done
+          let updatedcategoriesData = categoriesData
+          const index = _.findIndex(updatedcategoriesData.data.new, (c: any) => {
+            return c.name === selectedCategory
+          });
+          updatedcategoriesData.data.new[index].items = updatedcategoriesData.data.new[index].items.concat(items)
+          this.setState({ isSaving: false, showAddNewModal: false, categoriesData: updatedcategoriesData });
+          //
+
+          //this.setState({ isSaving: false, showAddNewModal: false});
+
         })
-    } else {
+    } else if (type == 2) {
+      this.setState({ isSaving: true });
       const categoryName = this.state.categoeyNameInput;
       const data = { categoryName: categoryName, items: items }
       server.post('/createNewCategory', data)
         .then((res) => {
-          this.setState({ isSaving: false, showAddNewModal: false });
+          let updatedcategoriesData = categoriesData
+          updatedcategoriesData.data.new.push({ name: categoryName, items: items })
+          this.setState({ isSaving: false, showAddNewModal: false, categoriesData: updatedcategoriesData });
         })
         .catch((error) => {
-          this.setState({ isSaving: false, showAddNewModal: false });
+          //remove this block after api done
+          let updatedcategoriesData = categoriesData
+          updatedcategoriesData.data.new.push({ name: categoryName, items: items })
+          this.setState({ isSaving: false, showAddNewModal: false, categoriesData: updatedcategoriesData });
+          //
+
+          //this.setState({ isSaving: false, showAddNewModal: false});
         })
+    } else {
+      alert("Please select atleast one radio")
     }
   }
 
@@ -194,7 +221,7 @@ export default class App extends React.Component<IAppProps, IAppStates> {
   }
 
   getPokemons() {
-    return server.get('https://5n6ugc33m6.execute-api.us-east-1.amazonaws.com/api/pokedex')
+    return server.get('/getAllPokemons')
       .then(res => {
         return this.state.pokemonsData;
         // return res;
@@ -202,7 +229,7 @@ export default class App extends React.Component<IAppProps, IAppStates> {
   }
 
   getCategories() {
-    return server.get('https://5n6ugc33m6.execute-api.us-east-1.amazonaws.com/api/pokedex')
+    return server.get('/getAllCategories')
       .then(res => {
         return this.state.categoriesData;
         // return res;
@@ -213,7 +240,7 @@ export default class App extends React.Component<IAppProps, IAppStates> {
     const items = this.state.slectedPOkemons;
     const data = { items: items, categoryName: categoryName };
     this.setState({ reorderText: "Undo redorder" });
-    server.post('/reorderCatrgory', data)
+    server.post('/reorderCatergory', data)
       .then((res) => {
 
       })
@@ -227,12 +254,31 @@ export default class App extends React.Component<IAppProps, IAppStates> {
     const categoryName = this.state.currentCategory;
     const data = { categoryName: categoryName }
     this.setState({ isDeleting: true });
-    server.post('/deleteCategory', data)
+    server.del('/deleteCategory', data)
       .then((res) => {
-        this.setState({ isDeleting: false, showDeleteModal: false });
+        let updatedcategoriesData = categoriesData
+        const index = _.findIndex(updatedcategoriesData.data.new, (c: any) => {
+          return c.name === categoryName
+        });
+        _.remove(updatedcategoriesData.data.new, (c) => {
+          return c.name === categoryName
+        })
+        this.setState({ isDeleting: false, showDeleteModal: false, categoriesData: updatedcategoriesData });
       })
       .catch((error) => {
+        //remove this block after api done
+        let updatedcategoriesData = categoriesData
+        const index = _.findIndex(updatedcategoriesData.data.new, (c: any) => {
+          return c.name === categoryName
+        });
+        _.remove(updatedcategoriesData.data.new, (c) => {
+          return c.name === categoryName
+        })
+        this.setState({ isDeleting: false, showDeleteModal: false, categoriesData: updatedcategoriesData });
+        //
+
         this.setState({ isDeleting: false, showDeleteModal: false });
+
       })
   }
 
@@ -354,35 +400,43 @@ export default class App extends React.Component<IAppProps, IAppStates> {
         {/* {this.state.showAddNewModal && */}
         <Modal size='small' open={this.state.showAddNewModal}>
           <Modal.Content>
-            <div className='ui grid centered'>
-              <div className='sixteen wide column p_action_modal_sec'>
-                <Radio
-                  label='Select an existing category'
-                  className='p_select_radio'
-                  value={1}
-                  name='radioGroup'
-                  onChange={this.onSelectRadio.bind(this)} />
-                <Dropdown
-                  placeholder='Select Friend'
-                  fluid
-                  selection
-                  options={categoryOptions}
-                  onChange={this.handleDropDownChange.bind(this)}
-                />
+            <Form>
+              <div className='ui grid centered'>
+                <div className='sixteen wide column p_action_modal_sec'>
+                  <Form.Field>
+                    <Form.Radio
+                      label='Select an existing category'
+                      className='p_select_radio'
+                      value={1}
+                      name='type'
+                      checked={this.state.slectedRadioType === 1}
+                      onChange={this.onSelectRadio.bind(this)} />
+                    <Dropdown
+                      placeholder='Select Friend'
+                      fluid
+                      selection
+                      options={categoryOptions}
+                      onChange={this.handleDropDownChange.bind(this)}
+                    />
+                  </Form.Field>
+                </div>
+                <div className='sixteen wide column p_action_modal_sec'>
+                  <Form.Field>
+                    <Form.Radio
+                      label='Or create a new category'
+                      className='p_select_radio'
+                      value={2}
+                      name='type'
+                      checked={this.state.slectedRadioType === 2}
+                      onChange={this.onSelectRadio.bind(this)} />
+                    <Input
+                      placeholder='Category name...'
+                      className='p_input'
+                      onChange={this.handleInputChange.bind(this)} />
+                  </Form.Field>
+                </div>
               </div>
-              <div className='sixteen wide column p_action_modal_sec'>
-                <Radio
-                  label='Or create a new category'
-                  className='p_select_radio'
-                  value={2}
-                  name='radioGroup'
-                  onChange={this.onSelectRadio.bind(this)} />
-                <Input
-                  placeholder='Category name...'
-                  className='p_input'
-                  onChange={this.handleInputChange.bind(this)} />
-              </div>
-            </div>
+            </Form>
           </Modal.Content>
           <Modal.Actions>
             <Button

@@ -58,7 +58,7 @@ export function get<ResponseDataType>(path: string): IServerResponse<ResponseDat
     );
 }
 
-export function put<ResponseDataType>(path: string, data: any, opts?: IAPIOptions): IServerResponse<ResponseDataType> {
+export function put<ResponseDataType>(path: string, data: any): IServerResponse<ResponseDataType> {
   return axiosInstance
     .put(path, JSON.stringify(data))
     .then(
